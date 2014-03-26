@@ -20,6 +20,7 @@
 
 #import "HFAppDelegate.h"
 
+#import <UNIRest.h>
 
 @interface HFViewController () <FBLoginViewDelegate>
 
@@ -117,6 +118,18 @@
     NSLog(@"%@", user);
     
     NSLog(@"%@", [[[FBSession activeSession] accessTokenData] accessToken]);
+    
+    
+    NSDictionary* headers = @{@"accept": @"application/json"};
+    NSDictionary* parameters = @{@"parameter": @"value", @"foo": @"bar"};
+    
+    UNIHTTPJsonResponse* response = [[UNIRest post:^(UNISimpleRequest* request) {
+        [request setUrl:@"http://httpbin.org/post"];
+        [request setHeaders:headers];
+        [request setParameters:parameters];
+    }] asJson];
+    
+    NSLog(@"%@", response);
 }
 
 - (void)loginViewShowingLoggedOutUser:(FBLoginView *)loginView {
