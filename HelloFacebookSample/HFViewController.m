@@ -49,20 +49,23 @@
 @interface HFViewController () <FBLoginViewDelegate>
 
 @property (strong, nonatomic) IBOutlet FBProfilePictureView *profilePic;
-@property (strong, nonatomic) IBOutlet UIButton *buttonPostStatus;
-@property (strong, nonatomic) IBOutlet UIButton *buttonPostPhoto;
 @property (strong, nonatomic) IBOutlet UIButton *buttonPostIdea;
-@property (strong, nonatomic) IBOutlet UIButton *buttonPickPlace;
+@property (strong, nonatomic) IBOutlet UIButton *buttonpostImage;
 @property (strong, nonatomic) IBOutlet UILabel *labelFirstName;
 @property (strong, nonatomic) id<FBGraphUser> loggedInUser;
 
 @property (strong, nonatomic) NSString *rusic_participant_token;
 @property (strong, nonatomic) NSString *image_id;
 
-- (IBAction)postStatusUpdateClick:(UIButton *)sender;
-- (IBAction)postPhotoClick:(UIButton *)sender;
+@property (strong, nonatomic) NSString *api_key;
+@property (strong, nonatomic) NSString *username;
+@property (strong, nonatomic) NSString *space_id;
+@property (strong, nonatomic) NSString *static_title;
+@property (strong, nonatomic) NSString *static_content;
+@property (strong, nonatomic) NSString *static_image;
+
 - (IBAction)postIdeaClick:(UIButton *)sender;
-- (IBAction)pickPlaceClick:(UIButton *)sender;
+- (IBAction)postImageClick:(UIButton *)sender;
 
 - (void)showAlert:(NSString *)message
            result:(id)result
@@ -76,6 +79,14 @@
 #pragma mark - UIViewController
 
 - (void)viewDidLoad {
+    
+    self.api_key = @"2a5e3e02c586ee2c21b4fb8346aece7d";
+    self.username = @"iosdemo";
+    self.space_id = @"416";
+    self.static_title = @"Test Title";
+    self.static_content = @"Test Content";
+    self.static_image = @"Test.jpg";
+    
     [super viewDidLoad];
 
     // Create Login View so that the app will be granted "status_update" permission.
@@ -100,9 +111,7 @@
 
 - (void)viewDidUnload {
     self.buttonPostIdea = nil;
-    self.buttonPickPlace = nil;
-    self.buttonPostPhoto = nil;
-    self.buttonPostStatus = nil;
+    self.buttonpostImage = nil;
     self.labelFirstName = nil;
     self.loggedInUser = nil;
     self.profilePic = nil;
@@ -122,13 +131,9 @@
 
 - (void)loginViewShowingLoggedInUser:(FBLoginView *)loginView {
     // first get the buttons set for login mode
-    self.buttonPostPhoto.enabled = YES;
-    self.buttonPostStatus.enabled = YES;
-    self.buttonPostIdea.enabled = YES;
-    self.buttonPickPlace.enabled = YES;
+    self.buttonPostIdea.enabled = NO;
+    self.buttonpostImage.enabled = YES;
 
-    // "Post Status" available when logged on and potentially when logged off.  Differentiate in the label.
-    [self.buttonPostStatus setTitle:@"Post Status Update (Logged On)" forState:self.buttonPostStatus.state];
 }
 
 - (void)loginViewFetchedUserInfo:(FBLoginView *)loginView
@@ -145,7 +150,7 @@
     // Set up the headers including the X-API-Key provided by Rusic admin system
     NSDictionary* headers = @{
         @"accept": @"application/vnd.rusic.v1+json",
-        @"X-API-Key": @"2a5e3e02c586ee2c21b4fb8346aece7d"
+        @"X-API-Key": self.api_key
     };
 
     // Setup parameters for creating a new participant
@@ -185,16 +190,9 @@
 #ifdef DEBUG
     [FBSettings enableBetaFeatures:FBBetaFeaturesShareDialog];
 #endif
-    BOOL canShareFB = [FBDialogs canPresentShareDialogWithParams:p];
-    BOOL canShareiOS6 = [FBDialogs canPresentOSIntegratedShareDialogWithSession:nil];
 
-    self.buttonPostStatus.enabled = canShareFB || canShareiOS6;
-    self.buttonPostPhoto.enabled = NO;
     self.buttonPostIdea.enabled = NO;
-    self.buttonPickPlace.enabled = NO;
-
-    // "Post Status" available when logged on and potentially when logged off.  Differentiate in the label.
-    [self.buttonPostStatus setTitle:@"Post Status Update (Logged Off)" forState:self.buttonPostStatus.state];
+    self.buttonpostImage.enabled = NO;
 
     self.profilePic.profileID = nil;
     self.labelFirstName.text = nil;
@@ -209,167 +207,35 @@
 
 #pragma mark -
 
-// Convenience method to perform some action that requires the "publish_actions" permissions.
-- (void)performPublishAction:(void(^)(void))action {
-    // we defer request for permission to post to the moment of post, then we check for the permission
-    if ([FBSession.activeSession.permissions indexOfObject:@"publish_actions"] == NSNotFound) {
-        // if we don't already have the permission, then we request it now
-        [FBSession.activeSession requestNewPublishPermissions:@[@"publish_actions"]
-                                              defaultAudience:FBSessionDefaultAudienceFriends
-                                            completionHandler:^(FBSession *session, NSError *error) {
-                                                if (!error) {
-                                                    action();
-                                                } else if (error.fberrorCategory != FBErrorCategoryUserCancelled) {
-                                                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Permission denied"
-                                                                                                        message:@"Unable to get permission to post"
-                                                                                                       delegate:nil
-                                                                                              cancelButtonTitle:@"OK"
-                                                                                              otherButtonTitles:nil];
-                                                    [alertView show];
-                                                }
-                                            }];
-    } else {
-        action();
-    }
-
-}
-
-// Post Status Update button handler; will attempt different approaches depending upon configuration.
-- (IBAction)postStatusUpdateClick:(UIButton *)sender {
-    // Post a status update to the user's feed via the Graph API, and display an alert view
-    // with the results or an error.
-
-    NSURL *urlToShare = [NSURL URLWithString:@"http://developers.facebook.com/ios"];
-
-    // This code demonstrates 3 different ways of sharing using the Facebook SDK.
-    // The first method tries to share via the Facebook app. This allows sharing without
-    // the user having to authorize your app, and is available as long as the user has the
-    // correct Facebook app installed. This publish will result in a fast-app-switch to the
-    // Facebook app.
-    // The second method tries to share via Facebook's iOS6 integration, which also
-    // allows sharing without the user having to authorize your app, and is available as
-    // long as the user has linked their Facebook account with iOS6. This publish will
-    // result in a popup iOS6 dialog.
-    // The third method tries to share via a Graph API request. This does require the user
-    // to authorize your app. They must also grant your app publish permissions. This
-    // allows the app to publish without any user interaction.
-
-    // If it is available, we will first try to post using the share dialog in the Facebook app
-    FBAppCall *appCall = [FBDialogs presentShareDialogWithLink:urlToShare
-                                                          name:@"Hello Facebook"
-                                                       caption:nil
-                                                   description:@"The 'Hello Facebook' sample application showcases simple Facebook integration."
-                                                       picture:nil
-                                                   clientState:nil
-                                                       handler:^(FBAppCall *call, NSDictionary *results, NSError *error) {
-                                                           if (error) {
-                                                               NSLog(@"Error: %@", error.description);
-                                                           } else {
-                                                               NSLog(@"Success!");
-                                                           }
-                                                       }];
-
-    if (!appCall) {
-        // Next try to post using Facebook's iOS6 integration
-        BOOL displayedNativeDialog = [FBDialogs presentOSIntegratedShareDialogModallyFrom:self
-                                                                              initialText:nil
-                                                                                    image:nil
-                                                                                      url:urlToShare
-                                                                                  handler:nil];
-
-        if (!displayedNativeDialog) {
-            // Lastly, fall back on a request for permissions and a direct post using the Graph API
-            [self performPublishAction:^{
-                NSString *message = [NSString stringWithFormat:@"Updating status for %@ at %@", self.loggedInUser.first_name, [NSDate date]];
-
-                FBRequestConnection *connection = [[FBRequestConnection alloc] init];
-
-                connection.errorBehavior = FBRequestConnectionErrorBehaviorReconnectSession
-                | FBRequestConnectionErrorBehaviorAlertUser
-                | FBRequestConnectionErrorBehaviorRetry;
-
-                [connection addRequest:[FBRequest requestForPostStatusUpdate:message]
-                     completionHandler:^(FBRequestConnection *innerConnection, id result, NSError *error) {
-                         [self showAlert:message result:result error:error];
-                         self.buttonPostStatus.enabled = YES;
-                     }];
-                [connection start];
-
-                self.buttonPostStatus.enabled = NO;
-            }];
-        }
-    }
-}
-
-// Post Photo button handler
-- (IBAction)postPhotoClick:(UIButton *)sender {
-  // Just use the icon image from the application itself.  A real app would have a more
-  // useful way to get an image.
-  UIImage *img = [UIImage imageNamed:@"Icon-72@2x.png"];
-
-
-    BOOL canPresent = [FBDialogs canPresentShareDialogWithPhotos];
-    NSLog(@"canPresent: %d", canPresent);
-
-  FBShareDialogPhotoParams *params = [[FBShareDialogPhotoParams alloc] init];
-  params.photos = @[img];
-
-  FBAppCall *appCall = [FBDialogs presentShareDialogWithPhotoParams:params
-                                                        clientState:nil
-                                                            handler:^(FBAppCall *call, NSDictionary *results, NSError *error) {
-                                                                if (error) {
-                                                                    NSLog(@"Error: %@", error.description);
-                                                                } else {
-                                                                    NSLog(@"Success!");
-                                                                }
-                                                            }];
-  if (!appCall) {
-    [self performPublishAction:^{
-      FBRequestConnection *connection = [[FBRequestConnection alloc] init];
-      connection.errorBehavior = FBRequestConnectionErrorBehaviorReconnectSession
-      | FBRequestConnectionErrorBehaviorAlertUser
-      | FBRequestConnectionErrorBehaviorRetry;
-
-      [connection addRequest:[FBRequest requestForUploadPhoto:img]
-           completionHandler:^(FBRequestConnection *innerConnection, id result, NSError *error) {
-             [self showAlert:@"Photo Post" result:result error:error];
-             if (FBSession.activeSession.isOpen) {
-               self.buttonPostPhoto.enabled = YES;
-             }
-           }];
-      [connection start];
-
-      self.buttonPostPhoto.enabled = NO;
-    }];
-  }
-}
-
-// Pick Friends button handler
+// POST IDEA HANDLER
 - (IBAction)postIdeaClick:(UIButton *)sender {
 
-    NSLog(@"About to post to rusic rusic_participant_token: %@", self.rusic_participant_token);
+    NSLog(@"About to post idea to Rusic");
 
     // Setup Header providing the X-Rusic-Participant-Token
     NSDictionary* headers = @{
       @"accept": @"application/vnd.rusic.v1+json",
-      @"X-API-Key": @"2a5e3e02c586ee2c21b4fb8346aece7d",
+      @"X-API-Key": self.api_key,
       @"X-Rusic-Participant-Token": self.rusic_participant_token
     };
 
+    // Get the image ID
     NSString *image = [NSString stringWithFormat:@"%@", self.image_id];
-
-    NSLog(@"%@", image);
 
     // Setup Parameters with some static (fake) data
     NSDictionary* parameters = @{
-      @"idea[title]": @"Bang",
-      @"idea[content]": @"Bar",
+      @"idea[title]": self.static_title,
+      @"idea[content]": self.static_content,
       @"idea[image_ids][]": image
     };
+    
+    NSString *url = [NSString stringWithFormat:@"http://api.rusic.com/buckets/%@/ideas", self.space_id];
 
+    NSLog(@"%@", url);
+    
     // Make a post request to the Rusic `space` with the headers and parameter
     [[UNIRest post:^(UNISimpleRequest* request) {
-        [request setUrl:@"http://api.rusic.com/buckets/416/ideas"];
+        [request setUrl: url];
         [request setHeaders:headers];
         [request setParameters:parameters];
     }] asJsonAsync:^(UNIHTTPJsonResponse* response, NSError *error) {
@@ -378,31 +244,51 @@
 
 }
 
-// Pick Place button handler
-- (IBAction)pickPlaceClick:(UIButton *)sender {
+// POST IMAGE HANDLER
+- (IBAction)postImageClick:(UIButton *)sender {
 
-    NSLog(@"POST IMAGE");
-
+    NSLog(@"About to post image to Rusic");
+    
+    // Disable the button after the first tap
+    self.buttonpostImage.enabled = NO;
+    
+    // Change the button to say uploading
+    [self.buttonpostImage setTitle:@"Uploading Image..." forState:UIControlStateNormal];
+    
+    // Set the API URL
     NSString *apiurl = @"http://api.rusic.com/images";
-    //NSString *contenttype = @"image/png";
-    //NSString *apikey = @"2a5e3e02c586ee2c21b4fb8346aece7d";
-    NSString *imagename = @"Test.jpg";
+    
+    //  Set the image Name
+    NSString *imagename = self.static_image;
+    
+    // Create a UIImage from the imagename
     UIImage *image = [UIImage imageNamed: imagename];
 
+    // Log out the image size to prove it loaded correctly
     NSLog(@"Image width is %f", image.size.width);
     NSLog(@"Image height is %f", image.size.height);
 
+    // Get the Image Data at full quality
 	NSData *imageData = UIImageJPEGRepresentation(image, 1.0);
-	//NSURL *url = [NSURL URLWithString: apiurl];
-
+    
+    // Generate NSURL for the Image
     NSURL *url = [NSURL URLWithString: apiurl];
+    
+    // Create a ASIFormDataRequest
     ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
+    
+    // Create a setDelegate to self to allow async events to bind
     [request setDelegate:self];
+    
+    // Set the request data
     [request setData:imageData withFileName:@"Default.png" andContentType:@"image/jpeg" forKey:@"image[file]"];
+    
+    // Set the request headers
     [request addRequestHeader:@"accept" value:@"application/vnd.rusic.v1+json"];
-    [request addRequestHeader:@"X-API-Key" value:@"2a5e3e02c586ee2c21b4fb8346aece7d"];
+    [request addRequestHeader:@"X-API-Key" value: self.api_key];
     [request addRequestHeader:@"X-Rusic-Participant-Token" value: self.rusic_participant_token];
 
+    // Start the request
     [request startAsynchronous];
 
 }
@@ -410,23 +296,28 @@
 - (void)requestFinished:(ASIFormDataRequest *)request
 {
 
-    NSLog(@"requestFinished");
+    NSLog(@"Image upload complete");
 
-    // Use when fetching text data
+    // Get the raw response
     NSString *responseString = [request responseString];
-    NSLog(@"%@", responseString);
 
-
-    //parse out the json data
+    // Parse the json of the response
     NSData *jsonData = [responseString dataUsingEncoding:NSUTF8StringEncoding];
     NSError* error;
     NSDictionary* json = [NSJSONSerialization
-                          JSONObjectWithData:jsonData //1
+                          JSONObjectWithData:jsonData
 
                           options:kNilOptions
                           error:&error];
 
-    self.image_id = [json objectForKey:@"id"]; //2
+    // Set image_id to the `id`
+    self.image_id = [json objectForKey:@"id"];
+    
+    // Change the post image button to say done
+    [self.buttonpostImage setTitle:@"Done!" forState:UIControlStateNormal];
+    
+    // Enable the Post Idea button
+    self.buttonPostIdea.enabled = YES;
 
 }
 
