@@ -4,6 +4,16 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>Pods-ASIHTTPRequest.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>Pods-Reachability.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>Pods-Unirest.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -17,12 +27,22 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
-		<key>05E871B1B6094C5DBBBFF51B</key>
+		<key>8979C53E91CA4729886CB8E2</key>
 		<dict>
 			<key>primary</key>
 			<true/>
 		</dict>
-		<key>06F4D9660E0E4FDAB23808C9</key>
+		<key>D077FE6B306143A2AEC2517F</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>D36349AE88474668A8AF7BAB</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>DE2B4F94175B45B2A610B4CA</key>
 		<dict>
 			<key>primary</key>
 			<true/>
