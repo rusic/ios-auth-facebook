@@ -57,6 +57,7 @@
 @property (strong, nonatomic) id<FBGraphUser> loggedInUser;
 
 @property (strong, nonatomic) NSString *rusic_participant_token;
+@property (strong, nonatomic) NSString *image_id;
 
 - (IBAction)postStatusUpdateClick:(UIButton *)sender;
 - (IBAction)postPhotoClick:(UIButton *)sender;
@@ -355,10 +356,15 @@
       @"X-Rusic-Participant-Token": self.rusic_participant_token
     };
     
+    NSString *image = [NSString stringWithFormat:@"%@", self.image_id];
+    
+    NSLog(@"%@", image);
+    
     // Setup Parameters with some static (fake) data
     NSDictionary* parameters = @{
-      @"idea[title]": @"Foo",
-      @"idea[content]": @"Bar"
+      @"idea[title]": @"Bang",
+      @"idea[content]": @"Bar",
+      @"idea[image_ids][]": image
     };
     
     // Make a post request to the Rusic `space` with the headers and parameter
@@ -374,25 +380,61 @@
 
 // Pick Place button handler
 - (IBAction)pickPlaceClick:(UIButton *)sender {
-    NSURL *image = [[NSBundle mainBundle]
-                    URLForResource: @"Default" withExtension:@"png"];
     
-    NSDictionary* headers = @{
-                              @"accept": @"application/vnd.rusic.v1+json",
-                              @"X-API-Key": @"<private>",
-                              @"Content-Type": @"multipart/form-data",
-                              @"X-Rusic-Participant-Token": self.rusic_participant_token
-                              };
+    NSLog(@"POST IMAGE");
     
-    NSDictionary* parameters = @{@"image[file]": image};
+    NSString *apiurl = @"http://api.rusic.com/images";
+    //NSString *contenttype = @"image/png";
+    //NSString *apikey = @"2a5e3e02c586ee2c21b4fb8346aece7d";
+    NSString *imagename = @"Test.jpg";
+    UIImage *image = [UIImage imageNamed: imagename];
     
-    UNIHTTPJsonResponse* response = [[UNIRest post:^(UNISimpleRequest* request) {
-        [request setUrl:@"http://api.rusic.com/images"];
-        [request setHeaders:headers];
-        [request setParameters:parameters];
-    }] asJson];
+    NSLog(@"Image width is %f", image.size.width);
+    NSLog(@"Image height is %f", image.size.height);
     
-    NSLog(@"%@", response);
+	NSData *imageData = UIImageJPEGRepresentation(image, 1.0);
+	//NSURL *url = [NSURL URLWithString: apiurl];
+    
+    NSURL *url = [NSURL URLWithString: apiurl];
+    ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
+    [request setDelegate:self];
+    [request setData:imageData withFileName:@"Default.png" andContentType:@"image/jpeg" forKey:@"image[file]"];
+    [request addRequestHeader:@"accept" value:@"application/vnd.rusic.v1+json"];
+    [request addRequestHeader:@"X-API-Key" value:@"2a5e3e02c586ee2c21b4fb8346aece7d"];
+    [request addRequestHeader:@"X-Rusic-Participant-Token" value: self.rusic_participant_token];
+    
+    [request startAsynchronous];
+    
+}
+
+- (void)requestFinished:(ASIFormDataRequest *)request
+{
+    
+    NSLog(@"requestFinished");
+    
+    // Use when fetching text data
+    NSString *responseString = [request responseString];
+    NSLog(@"%@", responseString);
+    
+
+    //parse out the json data
+    NSData *jsonData = [responseString dataUsingEncoding:NSUTF8StringEncoding];
+    NSError* error;
+    NSDictionary* json = [NSJSONSerialization
+                          JSONObjectWithData:jsonData //1
+                          
+                          options:kNilOptions
+                          error:&error];
+    
+    self.image_id = [json objectForKey:@"id"]; //2
+
+}
+
+- (void)requestFailed:(ASIFormDataRequest *)request
+{
+    NSLog(@"ERROR");
+    NSError *error = [request error];
+    NSLog(@"%@", error);
 }
 
 // UIAlertView helper for post buttons
