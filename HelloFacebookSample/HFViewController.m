@@ -58,7 +58,6 @@
 @property (strong, nonatomic) NSString *image_id;
 
 @property (strong, nonatomic) NSString *api_key;
-@property (strong, nonatomic) NSString *username;
 @property (strong, nonatomic) NSString *space_id;
 @property (strong, nonatomic) NSString *static_title;
 @property (strong, nonatomic) NSString *static_content;
@@ -81,7 +80,6 @@
 - (void)viewDidLoad {
     
     self.api_key = @"2a5e3e02c586ee2c21b4fb8346aece7d";
-    self.username = @"iosdemo";
     self.space_id = @"416";
     self.static_title = @"Test Title";
     self.static_content = @"Test Content";
