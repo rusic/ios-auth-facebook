@@ -249,7 +249,7 @@
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBCocoaTouchOutletConnection" key="connection">
-						<string key="label">buttonPickFriends</string>
+						<string key="label">buttonPostIdea</string>
 						<reference key="source" ref="841351856"/>
 						<reference key="destination" ref="251662012"/>
 					</object>
@@ -283,7 +283,7 @@
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBCocoaTouchEventConnection" key="connection">
-						<string key="label">pickFriendsClick:</string>
+						<string key="label">postIdeaClick:</string>
 						<reference key="source" ref="251662012"/>
 						<reference key="destination" ref="841351856"/>
 						<int key="IBEventType">7</int>
@@ -401,14 +401,14 @@
 					<string key="className">HFViewController</string>
 					<string key="superclassName">UIViewController</string>
 					<dictionary class="NSMutableDictionary" key="actions">
-						<string key="pickFriendsClick:">UIButton</string>
+						<string key="postIdeaClick:">UIButton</string>
 						<string key="pickPlaceClick:">UIButton</string>
 						<string key="postPhotoClick:">UIButton</string>
 						<string key="postStatusUpdateClick:">UIButton</string>
 					</dictionary>
 					<dictionary class="NSMutableDictionary" key="actionInfosByName">
-						<object class="IBActionInfo" key="pickFriendsClick:">
-							<string key="name">pickFriendsClick:</string>
+						<object class="IBActionInfo" key="postIdeaClick:">
+							<string key="name">postIdeaClick:</string>
 							<string key="candidateClassName">UIButton</string>
 						</object>
 						<object class="IBActionInfo" key="pickPlaceClick:">
@@ -425,7 +425,7 @@
 						</object>
 					</dictionary>
 					<dictionary class="NSMutableDictionary" key="outlets">
-						<string key="buttonPickFriends">UIButton</string>
+						<string key="buttonPostIdea">UIButton</string>
 						<string key="buttonPickPlace">UIButton</string>
 						<string key="buttonPostPhoto">UIButton</string>
 						<string key="buttonPostStatus">UIButton</string>
@@ -433,8 +433,8 @@
 						<string key="profilePic">FBProfilePictureView</string>
 					</dictionary>
 					<dictionary class="NSMutableDictionary" key="toOneOutletInfosByName">
-						<object class="IBToOneOutletInfo" key="buttonPickFriends">
-							<string key="name">buttonPickFriends</string>
+						<object class="IBToOneOutletInfo" key="buttonPostIdea">
+							<string key="name">buttonPostIdea</string>
 							<string key="candidateClassName">UIButton</string>
 						</object>
 						<object class="IBToOneOutletInfo" key="buttonPickPlace">

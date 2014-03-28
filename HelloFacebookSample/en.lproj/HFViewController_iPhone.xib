@@ -207,7 +207,7 @@
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBCocoaTouchOutletConnection" key="connection">
-						<string key="label">buttonPickFriends</string>
+						<string key="label">buttonPostIdea</string>
 						<reference key="source" ref="372490531"/>
 						<reference key="destination" ref="895339881"/>
 					</object>
@@ -265,7 +265,7 @@
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBCocoaTouchEventConnection" key="connection">
-						<string key="label">pickFriendsClick:</string>
+						<string key="label">postIdeaClick:</string>
 						<reference key="source" ref="895339881"/>
 						<reference key="destination" ref="372490531"/>
 						<int key="IBEventType">7</int>

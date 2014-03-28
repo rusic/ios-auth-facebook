@@ -51,7 +51,7 @@
 @property (strong, nonatomic) IBOutlet FBProfilePictureView *profilePic;
 @property (strong, nonatomic) IBOutlet UIButton *buttonPostStatus;
 @property (strong, nonatomic) IBOutlet UIButton *buttonPostPhoto;
-@property (strong, nonatomic) IBOutlet UIButton *buttonPickFriends;
+@property (strong, nonatomic) IBOutlet UIButton *buttonPostIdea;
 @property (strong, nonatomic) IBOutlet UIButton *buttonPickPlace;
 @property (strong, nonatomic) IBOutlet UILabel *labelFirstName;
 @property (strong, nonatomic) id<FBGraphUser> loggedInUser;
@@ -61,7 +61,7 @@
 
 - (IBAction)postStatusUpdateClick:(UIButton *)sender;
 - (IBAction)postPhotoClick:(UIButton *)sender;
-- (IBAction)pickFriendsClick:(UIButton *)sender;
+- (IBAction)postIdeaClick:(UIButton *)sender;
 - (IBAction)pickPlaceClick:(UIButton *)sender;
 
 - (void)showAlert:(NSString *)message
@@ -99,7 +99,7 @@
 }
 
 - (void)viewDidUnload {
-    self.buttonPickFriends = nil;
+    self.buttonPostIdea = nil;
     self.buttonPickPlace = nil;
     self.buttonPostPhoto = nil;
     self.buttonPostStatus = nil;
@@ -124,7 +124,7 @@
     // first get the buttons set for login mode
     self.buttonPostPhoto.enabled = YES;
     self.buttonPostStatus.enabled = YES;
-    self.buttonPickFriends.enabled = YES;
+    self.buttonPostIdea.enabled = YES;
     self.buttonPickPlace.enabled = YES;
 
     // "Post Status" available when logged on and potentially when logged off.  Differentiate in the label.
@@ -147,7 +147,7 @@
         @"accept": @"application/vnd.rusic.v1+json",
         @"X-API-Key": @"2a5e3e02c586ee2c21b4fb8346aece7d"
     };
-    
+
     // Setup parameters for creating a new participant
     NSDictionary* parameters = @{
         @"participant[provider]": @"facebook",
@@ -155,7 +155,7 @@
         @"participant[oauth_token]": [[[FBSession activeSession] accessTokenData] accessToken],
         @"participant[nickname]": user.username
     };
-    
+
     // Post to the participant endpoint with the headers and parametes defined aboce
     [[UNIRest post:^(UNISimpleRequest* request) {
         [request setUrl:@"http://api.rusic.com/participants"];
@@ -164,18 +164,18 @@
     }] asJsonAsync:^(UNIHTTPJsonResponse* response, NSError *error) {
         // Get the response body
         UNIJsonNode* body = [response body];
-        
+
         // Create a dictionary of the response body
         NSDictionary* dic = [body JSONObject];
-        
+
         // Set the participant token to the rusic_participant_token key
         self.rusic_participant_token = [dic objectForKey:@"rusic_participant_token"];
-        
+
         // Log the token out
         NSLog(@"rusic_participant_token: %@", self.rusic_participant_token);
     }];
-    
-    
+
+
 }
 
 - (void)loginViewShowingLoggedOutUser:(FBLoginView *)loginView {
@@ -190,7 +190,7 @@
 
     self.buttonPostStatus.enabled = canShareFB || canShareiOS6;
     self.buttonPostPhoto.enabled = NO;
-    self.buttonPickFriends.enabled = NO;
+    self.buttonPostIdea.enabled = NO;
     self.buttonPickPlace.enabled = NO;
 
     // "Post Status" available when logged on and potentially when logged off.  Differentiate in the label.
@@ -310,7 +310,7 @@
 
     BOOL canPresent = [FBDialogs canPresentShareDialogWithPhotos];
     NSLog(@"canPresent: %d", canPresent);
-    
+
   FBShareDialogPhotoParams *params = [[FBShareDialogPhotoParams alloc] init];
   params.photos = @[img];
 
@@ -345,28 +345,28 @@
 }
 
 // Pick Friends button handler
-- (IBAction)pickFriendsClick:(UIButton *)sender {
+- (IBAction)postIdeaClick:(UIButton *)sender {
 
     NSLog(@"About to post to rusic rusic_participant_token: %@", self.rusic_participant_token);
-    
+
     // Setup Header providing the X-Rusic-Participant-Token
     NSDictionary* headers = @{
       @"accept": @"application/vnd.rusic.v1+json",
       @"X-API-Key": @"2a5e3e02c586ee2c21b4fb8346aece7d",
       @"X-Rusic-Participant-Token": self.rusic_participant_token
     };
-    
+
     NSString *image = [NSString stringWithFormat:@"%@", self.image_id];
-    
+
     NSLog(@"%@", image);
-    
+
     // Setup Parameters with some static (fake) data
     NSDictionary* parameters = @{
       @"idea[title]": @"Bang",
       @"idea[content]": @"Bar",
       @"idea[image_ids][]": image
     };
-    
+
     // Make a post request to the Rusic `space` with the headers and parameter
     [[UNIRest post:^(UNISimpleRequest* request) {
         [request setUrl:@"http://api.rusic.com/buckets/416/ideas"];
@@ -380,21 +380,21 @@
 
 // Pick Place button handler
 - (IBAction)pickPlaceClick:(UIButton *)sender {
-    
+
     NSLog(@"POST IMAGE");
-    
+
     NSString *apiurl = @"http://api.rusic.com/images";
     //NSString *contenttype = @"image/png";
     //NSString *apikey = @"2a5e3e02c586ee2c21b4fb8346aece7d";
     NSString *imagename = @"Test.jpg";
     UIImage *image = [UIImage imageNamed: imagename];
-    
+
     NSLog(@"Image width is %f", image.size.width);
     NSLog(@"Image height is %f", image.size.height);
-    
+
 	NSData *imageData = UIImageJPEGRepresentation(image, 1.0);
 	//NSURL *url = [NSURL URLWithString: apiurl];
-    
+
     NSURL *url = [NSURL URLWithString: apiurl];
     ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
     [request setDelegate:self];
@@ -402,30 +402,30 @@
     [request addRequestHeader:@"accept" value:@"application/vnd.rusic.v1+json"];
     [request addRequestHeader:@"X-API-Key" value:@"2a5e3e02c586ee2c21b4fb8346aece7d"];
     [request addRequestHeader:@"X-Rusic-Participant-Token" value: self.rusic_participant_token];
-    
+
     [request startAsynchronous];
-    
+
 }
 
 - (void)requestFinished:(ASIFormDataRequest *)request
 {
-    
+
     NSLog(@"requestFinished");
-    
+
     // Use when fetching text data
     NSString *responseString = [request responseString];
     NSLog(@"%@", responseString);
-    
+
 
     //parse out the json data
     NSData *jsonData = [responseString dataUsingEncoding:NSUTF8StringEncoding];
     NSError* error;
     NSDictionary* json = [NSJSONSerialization
                           JSONObjectWithData:jsonData //1
-                          
+
                           options:kNilOptions
                           error:&error];
-    
+
     self.image_id = [json objectForKey:@"id"]; //2
 
 }
